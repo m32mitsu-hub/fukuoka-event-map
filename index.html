@@ -38,67 +38,160 @@ select,input{width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;back
  .legend{left:18px}
 }
 
-/* ===== Mobile optimization ===== */
-@media (max-width: 700px) {
-  body { margin: 0; overflow: hidden; }
-  .app, .container, main { width: 100% !important; max-width: none !important; }
-  header { padding: 10px 12px !important; }
-  header h1 { font-size: 20px !important; margin: 0 0 4px !important; }
-  header p { font-size: 12px !important; }
-  .controls { 
+/* ===== Mobile: MAP first, filters second, event list third ===== */
+@media (max-width:700px) {
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    height: 100%;
+    overflow: auto !important;
+  }
+
+  .app {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+
+  /* Put the map first on mobile */
+  #map {
+    order: 1 !important;
+    width: 100% !important;
+    height: 52vh !important;
+    min-height: 360px !important;
+    position: relative !important;
+  }
+
+  .map-wrap {
+    order: 1 !important;
+    width: 100% !important;
+  }
+
+  /* Sidebar becomes the filter area */
+  .sidebar {
+    order: 2 !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .sidebar .event-list {
+    display: none !important;
+  }
+
+  .controls {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2000 !important;
+    background: #fff !important;
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 7px !important;
-    padding: 8px !important;
+    padding: 9px !important;
+    border-top: 1px solid #ddd !important;
+    border-bottom: 1px solid #ddd !important;
+    box-shadow: 0 2px 7px rgba(0,0,0,.08);
   }
-  .controls select, .controls button {
+
+  .controls select,
+  .controls button,
+  .controls label {
     min-height: 42px !important;
+    box-sizing: border-box;
     font-size: 14px !important;
   }
-  .map-wrap, #map {
-    height: 48vh !important;
-    min-height: 330px !important;
+
+  /* Event list below filters */
+  #mobile-event-list {
+    order: 3 !important;
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    background: #f6f7f9;
+    padding: 10px;
   }
-  .events, .event-list {
-    max-height: 43vh !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
+
+  #mobile-event-list .mobile-list-title {
+    font-size: 16px;
+    font-weight: 700;
+    padding: 4px 2px 8px;
   }
-  .event-card { padding: 12px !important; }
-  .event-card h3 { font-size: 16px !important; }
-  .event-card p { font-size: 13px !important; }
-  .leaflet-control-zoom a {
-    width: 42px !important; height: 42px !important;
-    line-height: 42px !important; font-size: 22px !important;
+
+  .mobile-event-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 9px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.10);
   }
-  .leaflet-popup-content { font-size: 14px !important; }
-  .gmaps-btn {
+
+  .mobile-event-card h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  .mobile-event-card .meta {
+    font-size: 13px;
+    line-height: 1.55;
+    color: #444;
+  }
+
+  .mobile-event-card .tags {
+    margin-top: 7px;
+  }
+
+  .mobile-event-card .tag {
+    display: inline-block;
+    margin-right: 5px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #eef3f8;
+    font-size: 11px;
+  }
+
+  .mobile-event-card .map-btn {
     display: inline-block;
     margin-top: 8px;
-    padding: 9px 12px;
-    border-radius: 8px;
+    padding: 8px 11px;
+    border-radius: 7px;
     background: #1976d2;
-    color: white !important;
+    color: #fff !important;
     text-decoration: none;
+    font-size: 12px;
     font-weight: 600;
   }
-  .today-btn {
-    grid-column: 1 / -1;
-    min-height: 42px !important;
+
+  .detail {
+    max-width: calc(100vw - 24px) !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: auto !important;
+    bottom: 12px !important;
+  }
+
+  .legend {
+    left: 10px !important;
+    bottom: 10px !important;
+  }
+
+  .leaflet-control-zoom a {
+    width: 40px !important;
+    height: 40px !important;
+    line-height: 40px !important;
+    font-size: 21px !important;
   }
 }
 
 </style>
 </head>
-
-<script>
-function googleMapsDirectionsUrl(lat, lng, name) {
-  return 'https://www.google.com/maps/dir/?api=1&destination=' +
-    encodeURIComponent(lat + ',' + lng) +
-    '&destination_place_id=&travelmode=walking';
-}
-</script>
-
 <body>
 <header>
   <h1>📍 福岡市イベントMAP</h1>
@@ -205,9 +298,70 @@ function showDetail(e){
 render();
 </script>
 
-<footer style="padding:10px 12px;text-align:center;font-size:11px;color:#666;background:#fff">
-  福岡市イベントMAP｜Leaflet + OpenStreetMap｜個人利用向け
-</footer>
+<script>
+(function(){
+  function esc(s){
+    return String(s ?? '').replace(/[&<>"']/g,c=>({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
+  function renderMobileEvents(){
+    if(window.innerWidth > 700 || typeof events === 'undefined') return;
+    const box=document.getElementById('mobile-event-cards');
+    if(!box) return;
+
+    const selects=[...document.querySelectorAll('select')];
+    const cat=selects.find(s=>/category|カテゴリ/i.test(s.id+' '+(s.previousElementSibling?.textContent||'')));
+    const per=selects.find(s=>/period|期間|月/i.test(s.id+' '+(s.previousElementSibling?.textContent||'')));
+    const free=[...document.querySelectorAll('input[type=checkbox]')]
+      .find(x=>/free|無料/i.test(x.id+' '+(x.parentElement?.textContent||'')));
+
+    let list=events.slice();
+
+    if(cat && cat.value && cat.value!=='all')
+      list=list.filter(e=>e.category===cat.value);
+
+    if(per && per.value && per.value!=='all')
+      list=list.filter(e=>
+        (e.start||'').slice(0,7)<=per.value &&
+        (e.end||e.start||'').slice(0,7)>=per.value
+      );
+
+    if(free && free.checked)
+      list=list.filter(e=>e.free);
+
+    list.sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+
+    box.innerHTML=list.length ? list.map(e=>{
+      const url='https://www.google.com/maps/dir/?api=1&destination='+
+        encodeURIComponent((e.lat||'')+','+(e.lng||''))+
+        '&travelmode=walking';
+
+      return `<article class="mobile-event-card">
+        <h3>${esc(e.name)}</h3>
+        <div class="meta">📅 ${esc(e.date || ((e.start||'')+'〜'+(e.end||'')))}</div>
+        <div class="meta">📍 ${esc(e.venue)}</div>
+        <div class="tags">
+          <span class="tag">${esc(e.category)}</span>
+          ${e.free ? '<span class="tag">無料</span>' : ''}
+        </div>
+        <a class="map-btn" href="${url}" target="_blank" rel="noopener">
+          Googleマップでここへ行く
+        </a>
+      </article>`;
+    }).join('') :
+      '<div style="padding:18px;text-align:center;color:#666">該当するイベントはありません。</div>';
+  }
+
+  window.addEventListener('load',()=>setTimeout(renderMobileEvents,500));
+  document.addEventListener('change',e=>{
+    if(e.target.matches('select,input[type=checkbox]'))
+      setTimeout(renderMobileEvents,50);
+  });
+  window.addEventListener('resize',renderMobileEvents);
+})();
+</script>
 
 </body>
 </html>
