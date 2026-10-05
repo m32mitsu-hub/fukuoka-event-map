@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>福岡市 イベントMAP｜2026年10月号</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",sans-serif;color:#202124;background:#f6f7f9}
+header{height:64px;background:#fff;border-bottom:1px solid #ddd;display:flex;align-items:center;padding:0 18px;gap:16px}
+header h1{font-size:19px;margin:0;white-space:nowrap}
+header small{color:#777}
+.app{display:grid;grid-template-columns:360px 1fr;height:calc(100vh - 64px)}
+.sidebar{background:#fff;border-right:1px solid #ddd;overflow:auto;padding:14px}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+select,input{width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;background:#fff}
+.filter-wide{grid-column:1/-1}
+.count{font-size:13px;color:#666;margin:8px 2px}
+.event{padding:12px;border:1px solid #e2e2e2;border-radius:10px;margin:8px 0;cursor:pointer;background:#fff}
+.event:hover{background:#f8fbff}
+.event .title{font-weight:700;font-size:14px;line-height:1.4}
+.event .meta{font-size:12px;color:#666;margin-top:5px}
+.badge{display:inline-block;font-size:11px;padding:3px 7px;border-radius:999px;background:#eef2ff;margin-top:7px}
+.badge.free{background:#e9f7ef;color:#16794c}
+#map{height:100%;min-height:500px}
+.detail{position:absolute;right:18px;top:82px;width:330px;max-width:calc(100vw - 40px);background:#fff;border-radius:12px;box-shadow:0 4px 20px #0002;padding:15px;z-index:500;display:none}
+.detail h2{font-size:17px;margin:0 0 8px}
+.detail p{font-size:13px;line-height:1.6;margin:6px 0}
+.detail button{border:0;background:#eee;border-radius:7px;padding:7px 10px;cursor:pointer}
+.source{font-size:11px;color:#777;margin-top:12px;border-top:1px solid #eee;padding-top:10px}
+.legend{position:absolute;left:380px;bottom:18px;background:#fff;padding:8px 10px;border-radius:8px;z-index:500;box-shadow:0 2px 10px #0002;font-size:12px}
+@media(max-width:800px){
+ .app{grid-template-columns:1fr;grid-template-rows:45% 55%}
+ .sidebar{border-right:0;border-bottom:1px solid #ddd}
+ #map{min-height:0}
+ .detail{top:auto;bottom:18px;right:18px}
+ .legend{left:18px}
+}
+
+/* ===== Mobile optimization ===== */
+@media (max-width: 700px) {
+  body { margin: 0; overflow: hidden; }
+  .app, .container, main { width: 100% !important; max-width: none !important; }
+  header { padding: 10px 12px !important; }
+  header h1 { font-size: 20px !important; margin: 0 0 4px !important; }
+  header p { font-size: 12px !important; }
+  .controls { 
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 7px !important;
+    padding: 8px !important;
+  }
+  .controls select, .controls button {
+    min-height: 42px !important;
+    font-size: 14px !important;
+  }
+  .map-wrap, #map {
+    height: 48vh !important;
+    min-height: 330px !important;
+  }
+  .events, .event-list {
+    max-height: 43vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .event-card { padding: 12px !important; }
+  .event-card h3 { font-size: 16px !important; }
+  .event-card p { font-size: 13px !important; }
+  .leaflet-control-zoom a {
+    width: 42px !important; height: 42px !important;
+    line-height: 42px !important; font-size: 22px !important;
+  }
+  .leaflet-popup-content { font-size: 14px !important; }
+  .gmaps-btn {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: #1976d2;
+    color: white !important;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .today-btn {
+    grid-column: 1 / -1;
+    min-height: 42px !important;
+  }
+}
+
+</style>
+</head>
+
+<script>
+function googleMapsDirectionsUrl(lat, lng, name) {
+  return 'https://www.google.com/maps/dir/?api=1&destination=' +
+    encodeURIComponent(lat + ',' + lng) +
+    '&destination_place_id=&travelmode=walking';
+}
+</script>
+
+<body>
+<header>
+  <h1>📍 福岡市イベントMAP</h1>
+  <small>福岡市政だより 2026年10月1日号ベース</small>
+</header>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="filters">
+      <select id="category">
+        <option value="">すべてのカテゴリ</option>
+        <option>夜イベント</option>
+        <option>歴史・文化</option>
+        <option>アート</option>
+        <option>ファミリー</option>
+        <option>スポーツ</option>
+      </select>
+      <select id="period">
+        <option value="">すべての期間</option>
+        <option value="2026-10">10月</option>
+        <option value="2026-11">11月</option>
+        <option value="2026-12">12月</option>
+      </select>
+      <label class="filter-wide" style="font-size:13px"><input id="free" type="checkbox" style="width:auto"> 無料イベントのみ</label>
+    </div>
+    <div class="count" id="count"></div>
+    <div id="list"></div>
+    <div class="source">出典：福岡市政だより 令和8年10月1日号（1～3面）。<br>会場位置は表示用に設定した概略位置です。日程・料金等は原紙／福岡市公式情報をご確認ください。</div>
+  </aside>
+  <main id="map"></main>
+</div>
+<div class="legend">🟠 夜イベント　🔵 歴史・文化　🟣 アート　🟢 ファミリー　🔴 スポーツ</div>
+<div id="detail" class="detail"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const events = [
+ {id:1,title:"博多川川床 ～博多リバーサイドフェスティバル～",cat:"夜イベント",start:"2026-10-09",end:"2026-10-17",date:"10/9(金)〜10/17(土)",venue:"博多川・川床会場（川端通商店街付近）",lat:33.5947,lng:130.4086,free:false,desc:"博多川の水辺に川床を設置。飲食、縁日、日替わりの伝統芸能・音楽・ダンスなど。"},
+ {id:2,title:"博多旧市街ライトアップウォーク2026 千年煌夜",cat:"夜イベント",start:"2026-10-31",end:"2026-11-03",date:"10/31(土)〜11/3(火・祝)",venue:"博多旧市街（博多千年門・寺院等）",lat:33.5967,lng:130.4119,free:false,desc:"寺院などをライトアップ。博多千年門で点灯式、承天寺の夜市、櫛田神社賑わい広場の音楽ライブなど。"},
+ {id:3,title:"光ノ祭 福岡城跡 チームラボ",cat:"アート",start:"2026-10-30",end:"2026-11-01",date:"10/30(金)〜11/1(日)（来年まで開催）",venue:"福岡城跡",lat:33.5863,lng:130.3827,free:false,desc:"福岡城跡を舞台にした夜の野外アート展。"},
+ {id:4,title:"鴻臚館北館東門 特別公開",cat:"歴史・文化",start:"2026-10-17",end:"2026-11-08",date:"10/17(土)〜11/8(日)",venue:"鴻臚館跡（舞鶴公園）",lat:33.5857,lng:130.3843,free:true,desc:"完成した鴻臚館北館東門を期間限定で特別公開。"},
+ {id:5,title:"ひかりの鴻臚館まつり",cat:"夜イベント",start:"2026-10-17",end:"2026-10-25",date:"10/17(土)〜10/25(日)",venue:"鴻臚館広場（舞鶴公園内）",lat:33.5857,lng:130.3843,free:true,desc:"光の演出、グルメ屋台、縁日など。午後4時〜9時。"},
+ {id:6,title:"雅楽ミニコンサート",cat:"歴史・文化",start:"2026-10-11",end:"2026-10-11",date:"10/11(日) 17:30〜18:00",venue:"福岡アジア美術館 7階アートカフェ",lat:33.5933,lng:130.4069,free:true,desc:"ふくおか歴史文化遺産ウィークのプレイベント。"},
+ {id:7,title:"民俗芸能公演",cat:"歴史・文化",start:"2026-10-17",end:"2026-10-18",date:"10/17(土)・10/18(日)",venue:"鴻臚館跡（舞鶴公園）",lat:33.5857,lng:130.3843,free:true,desc:"盲僧琵琶、博多独楽、雅楽、獅子舞など。18日は八代妙見祭の獅子舞がゲスト出演。"},
+ {id:8,title:"現地解説・古代衣装体験",cat:"歴史・文化",start:"2026-10-24",end:"2026-10-25",date:"10/24(土)・10/25(日)",venue:"鴻臚館跡（舞鶴公園）",lat:33.5857,lng:130.3843,free:false,desc:"専門家による東門の現地解説と古代衣装体験。"},
+ {id:9,title:"歴史的建造物特別公開",cat:"歴史・文化",start:"2026-10-17",end:"2026-11-03",date:"10/17(土)〜11/3(火・祝)",venue:"福岡城内（潮見櫓・伝潮見櫓・下之橋御門・長屋門・多聞櫓）",lat:33.5870,lng:130.3818,free:true,desc:"福岡城内の歴史的建造物5カ所を公開。スタンプラリーも実施。"},
+ {id:10,title:"福岡城内三ノ丸ファミリーデー",cat:"ファミリー",start:"2026-11-03",end:"2026-11-03",date:"11/3(火・祝) 10:00〜16:00",venue:"舞鶴公園 三ノ丸広場北側",lat:33.5876,lng:130.3832,free:true,desc:"獅子舞、獅子頭のお面作り、チャンバラ合戦など。"},
+ {id:11,title:"文化財見どころ解説（市博物館）",cat:"歴史・文化",start:"2026-10-10",end:"2026-10-10",date:"10/10(土)",venue:"福岡市博物館",lat:33.5930,lng:130.3512,free:true,desc:"大濱流灌頂解説と大燈籠絵ペーパークラフト作り。"},
+ {id:12,title:"歴史と文化を巡るバスツアー",cat:"歴史・文化",start:"2026-10-17",end:"2026-11-14",date:"10/17〜11/14に複数日程",venue:"福岡市内（コースにより異なる）",lat:33.5902,lng:130.4017,free:false,desc:"鴻臚館・太宰府ツアー、西区の遺跡、志賀島一周など。"}
+];
+
+const colors={ "夜イベント":"#f28c28","歴史・文化":"#3578c7","アート":"#8e55c7","ファミリー":"#35a56a","スポーツ":"#d64a4a" };
+const map=L.map('map').setView([33.5905,130.3980],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19,
+  attribution:'&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+const markers=new Map();
+events.forEach(e=>{
+  const marker=L.circleMarker([e.lat,e.lng],{
+    radius:9,fillColor:colors[e.cat]||"#555",color:"#fff",weight:2,fillOpacity:.95
+  }).addTo(map);
+  marker.bindTooltip(e.title,{direction:"top"});
+  marker.on("click",()=>showDetail(e));
+  markers.set(e.id,marker);
+});
+
+function active(e){
+  const cat=document.getElementById("category").value;
+  const period=document.getElementById("period").value;
+  const free=document.getElementById("free").checked;
+  if(cat && e.cat!==cat)return false;
+  if(free && !e.free)return false;
+  if(period){
+    const pStart=period+"-01";
+    const pEnd=period==="2026-10"?"2026-10-31":period==="2026-11"?"2026-11-30":"2026-12-31";
+    if(e.end<pStart || e.start>pEnd)return false;
+  }
+  return true;
+}
+function render(){
+  const list=document.getElementById("list"); list.innerHTML="";
+  const filtered=events.filter(active);
+  document.getElementById("count").textContent=`${filtered.length}件のイベント`;
+  filtered.forEach(e=>{
+    const el=document.createElement("div"); el.className="event";
+    el.innerHTML=`<div class="title">${e.title}</div><div class="meta">📅 ${e.date}<br>📍 ${e.venue}</div><span class="badge" style="background:${colors[e.cat]}20;color:${colors[e.cat]}">${e.cat}</span>${e.free?'<span class="badge free">無料</span>':''}`;
+    el.onclick=()=>{map.setView([e.lat,e.lng],15);showDetail(e);};
+    list.appendChild(el);
+  });
+  events.forEach(e=>markers.get(e.id).setStyle({opacity:active(e)?1:0,fillOpacity:active(e)?0.95:0}));
+}
+function showDetail(e){
+  const d=document.getElementById("detail"); d.style.display="block";
+  d.innerHTML=`<button style="float:right" onclick="document.getElementById('detail').style.display='none'">✕</button>
+  <h2>${e.title}</h2>
+  <p><b>開催日：</b>${e.date}</p><p><b>会場：</b>${e.venue}</p>
+  <p><b>カテゴリ：</b>${e.cat}</p><p><b>料金：</b>${e.free?"無料":"有料（詳細は公式情報を確認）"}</p>
+  <p>${e.desc}</p>
+  <div class="source">※内容は福岡市政だより 令和8年10月1日号の掲載情報をもとに整理。会場座標は地図表示用の概略値です。</div>`;
+}
+["category","period","free"].forEach(id=>document.getElementById(id).addEventListener("change",render));
+render();
+</script>
+
+<footer style="padding:10px 12px;text-align:center;font-size:11px;color:#666;background:#fff">
+  福岡市イベントMAP｜Leaflet + OpenStreetMap｜個人利用向け
+</footer>
+
+</body>
+</html>
