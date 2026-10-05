@@ -37,32 +37,68 @@ select,input{width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;back
  .detail{top:auto;bottom:18px;right:18px}
  .legend{left:18px}
 }
-</style>
 
-<style>
-@media (max-width:700px){
-  html,body{height:100%;overflow:hidden}
-  body{margin:0}
-  .app{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-  .sidebar{order:1;flex:0 0 auto;width:100%;height:auto;overflow:visible;box-sizing:border-box;padding:10px 12px 8px;border-right:0;border-bottom:1px solid #ddd;background:#fff}
-  .sidebar h1{display:none}
-  .filters{display:grid;grid-template-columns:1fr 1fr;gap:7px 8px;margin:0}
-  .filters label{min-width:0;margin:0}
-  .filters label:last-child{grid-column:1/-1}
-  .filters select{width:100%;min-height:38px;box-sizing:border-box}
-  .filters .check{min-height:32px;display:flex;align-items:center}
-  .sidebar > #event-list,.sidebar > .source{display:none}
-  #map{order:2;flex:0 0 42dvh;height:42dvh;min-height:280px;width:100%;position:relative}
-  #mobile-event-list{order:3;flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#f7f7f7;border-top:1px solid #ddd;padding:8px 10px 20px}
-  #mobile-event-list .list-heading{position:sticky;top:0;z-index:5;background:#f7f7f7;padding:5px 2px 8px;font-weight:700;font-size:15px}
-  #mobile-event-list .mobile-card{background:#fff;border:1px solid #e1e1e1;border-radius:8px;padding:10px 11px;margin-bottom:7px}
-  #mobile-event-list .mobile-card .title{font-weight:700;font-size:15px;line-height:1.4;margin-bottom:4px}
-  #mobile-event-list .mobile-card .meta{color:#555;font-size:12px;line-height:1.5}
-  #mobile-event-list .mobile-card button{margin-top:7px;width:100%;min-height:34px;border:0;border-radius:6px;background:#f0f0f0}
+/* ===== Mobile optimization ===== */
+@media (max-width: 700px) {
+  body { margin: 0; overflow: hidden; }
+  .app, .container, main { width: 100% !important; max-width: none !important; }
+  header { padding: 10px 12px !important; }
+  header h1 { font-size: 20px !important; margin: 0 0 4px !important; }
+  header p { font-size: 12px !important; }
+  .controls { 
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 7px !important;
+    padding: 8px !important;
+  }
+  .controls select, .controls button {
+    min-height: 42px !important;
+    font-size: 14px !important;
+  }
+  .map-wrap, #map {
+    height: 48vh !important;
+    min-height: 330px !important;
+  }
+  .events, .event-list {
+    max-height: 43vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .event-card { padding: 12px !important; }
+  .event-card h3 { font-size: 16px !important; }
+  .event-card p { font-size: 13px !important; }
+  .leaflet-control-zoom a {
+    width: 42px !important; height: 42px !important;
+    line-height: 42px !important; font-size: 22px !important;
+  }
+  .leaflet-popup-content { font-size: 14px !important; }
+  .gmaps-btn {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: #1976d2;
+    color: white !important;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .today-btn {
+    grid-column: 1 / -1;
+    min-height: 42px !important;
+  }
 }
-</style>
 
+</style>
 </head>
+
+<script>
+function googleMapsDirectionsUrl(lat, lng, name) {
+  return 'https://www.google.com/maps/dir/?api=1&destination=' +
+    encodeURIComponent(lat + ',' + lng) +
+    '&destination_place_id=&travelmode=walking';
+}
+</script>
+
 <body>
 <header>
   <h1>📍 福岡市イベントMAP</h1>
@@ -92,7 +128,7 @@ select,input{width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;back
     <div id="list"></div>
     <div class="source">出典：福岡市政だより 令和8年10月1日号（1～3面）。<br>会場位置は表示用に設定した概略位置です。日程・料金等は原紙／福岡市公式情報をご確認ください。</div>
   </aside>
-  <main id="map"></main><div id="mobile-event-list"><div class="list-heading">イベント一覧</div></div>
+  <main id="map"></main>
 </div>
 <div class="legend">🟠 夜イベント　🔵 歴史・文化　🟣 アート　🟢 ファミリー　🔴 スポーツ</div>
 <div id="detail" class="detail"></div>
@@ -144,47 +180,6 @@ function active(e){
   }
   return true;
 }
-
-function renderMobileEventList(list){
-  const box=document.getElementById("mobile-event-list");
-  if(!box)return;
-  box.innerHTML="";
-  const h=document.createElement("div");
-  h.className="list-heading";
-  h.textContent=`イベント一覧（${list.length}件）`;
-  box.appendChild(h);
-  if(!list.length){
-    const empty=document.createElement("div");
-    empty.className="mobile-card";
-    empty.textContent="条件に一致するイベントがありません。";
-    box.appendChild(empty);
-    return;
-  }
-  list.forEach(e=>{
-    const card=document.createElement("div");
-    card.className="mobile-card";
-    const title=document.createElement("div");
-    title.className="title";
-    title.textContent=e.title||"";
-    card.appendChild(title);
-    const meta=document.createElement("div");
-    meta.className="meta";
-    meta.textContent=(e.date||"")+(e.venue?"｜"+e.venue:"")+(e.free?"｜無料":"");
-    card.appendChild(meta);
-    if(e.lat!=null&&e.lng!=null){
-      const nav=document.createElement("button");
-      nav.textContent="Googleマップでここへ行く";
-      nav.onclick=ev=>{
-        ev.stopPropagation();
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lng}`,"_blank");
-      };
-      card.appendChild(nav);
-    }
-    card.onclick=()=>showDetail(e);
-    box.appendChild(card);
-  });
-}
-
 function render(){
   const list=document.getElementById("list"); list.innerHTML="";
   const filtered=events.filter(active);
@@ -196,8 +191,7 @@ function render(){
     list.appendChild(el);
   });
   events.forEach(e=>markers.get(e.id).setStyle({opacity:active(e)?1:0,fillOpacity:active(e)?0.95:0}));
-
-renderMobileEventList(list);}
+}
 function showDetail(e){
   const d=document.getElementById("detail"); d.style.display="block";
   d.innerHTML=`<button style="float:right" onclick="document.getElementById('detail').style.display='none'">✕</button>
@@ -210,5 +204,10 @@ function showDetail(e){
 ["category","period","free"].forEach(id=>document.getElementById(id).addEventListener("change",render));
 render();
 </script>
+
+<footer style="padding:10px 12px;text-align:center;font-size:11px;color:#666;background:#fff">
+  福岡市イベントMAP｜Leaflet + OpenStreetMap｜個人利用向け
+</footer>
+
 </body>
 </html>
