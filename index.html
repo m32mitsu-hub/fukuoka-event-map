@@ -221,6 +221,71 @@ select,input{width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;back
   }
 }
  .popup-address{font-size:11px;color:#666;margin-top:3px;line-height:1.35}
+
+/* === Map type switcher + legend layout === */
+.leaflet-top.leaflet-right {
+  right: 12px;
+}
+.leaflet-control-layers {
+  width: 92px !important;
+  box-sizing: border-box !important;
+  margin-top: 12px !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
+  background: rgba(255,255,255,.78) !important;
+  border: 1px solid rgba(0,0,0,.15) !important;
+  border-radius: 7px !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18) !important;
+  font-size: 11px !important;
+}
+.leaflet-control-layers-list {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 5px 6px !important;
+}
+.leaflet-control-layers label {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 2px 0 !important;
+  white-space: nowrap !important;
+}
+.leaflet-control-layers input {
+  margin: 0 4px 0 0 !important;
+  vertical-align: middle !important;
+}
+
+/* Existing legend: force it below the layer switcher, never overlapping. */
+.legend {
+  top: 76px !important;
+  right: 12px !important;
+  z-index: 800 !important;
+}
+
+@media (min-width: 601px) {
+  .leaflet-top.leaflet-right { right: 18px; }
+  .leaflet-control-layers {
+    width: 108px !important;
+    font-size: 12px !important;
+  }
+  .legend {
+    top: 88px !important;
+    right: 18px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .leaflet-top.leaflet-right { right: 12px; }
+  .leaflet-control-layers {
+    width: 100px !important;
+    font-size: 10px !important;
+  }
+  .legend {
+    top: 76px !important;
+    right: 12px !important;
+  }
+}
 </style>
 
 </head>
